@@ -9,6 +9,7 @@ from musictools import (play_progression, random_progression,
     random_key, isvalidnote, resolve_with_chords, chordname, 
     random_chord, easy_play, play_wait)
 import settings as st
+from listen import listen
 
 # External Dependencies
 import time, random, sys
@@ -241,7 +242,7 @@ def eval_interval_name(user_answer, interval, diatonic):
     user_answer = user_answer.strip()
     print("Your answer:   ", user_answer)
     print("Correct Answer:", correct_answer)
-    note_nums = [diatonic.note2num(x) for x in interval]
+    note_nums = [diatonic.note2degree(x) for x in interval]
     print("Interval Notes:", " ".join([str(x) for x in note_nums]))
     if user_answer == correct_answer:
         st.SCORE += 1
@@ -267,12 +268,12 @@ def eval_interval(ans, interval, diatonic):
         except:
             try:
                 note_name = ans[0].upper() + ans[1:]  # capitalize for mingus
-                return diatonic.note2num(Note(ans))
+                return diatonic.note2degree(Note(ans))
             except:
                 return "Err" 
 
     user_answers = [parse_answer(ans) for ans in answers]
-    correct_answers = [diatonic.note2num(x) for x in interval]
+    correct_answers = [diatonic.note2degree(x) for x in interval]
 
     if len(answers) < len(interval):
         print("too few answers")
@@ -675,6 +676,76 @@ def new_question_chord_tone():
             st.NEWQUESTION = False
     return
 
+###############################################################################
+# random-notes ################################################################
+###############################################################################
+
+
+def intro_rn():
+    print("And away we go!")
+
+
+@new_question
+def eval_rn(ans, notes, gst):
+    answers_correct = [(int(nu) - int(nc)) % 12 == 0
+                       for nu, nc in zip(ans, notes)]
+
+
+
+    print("Correct answer:", " ".join(notes))
+    print("Your answer:   ", " ".join(ans))
+
+    if all(answers_correct):
+        st.SCORE += 1
+        print("Good Job!")
+        print()
+    else:
+        print("It's ok, you'll get 'em next time.")
+        print()
+    # time.sleep(st.DELAY)
+    play_wait()
+
+
+def new_question_rn(game_settings):
+    gst = game_settings
+    if st.NEWQUESTION:
+        if st.COUNT:
+            print("score: {} / {} = {:.2%}".format(st.SCORE, st.COUNT,
+                                                    st.SCORE/st.COUNT))
+        st.COUNT += 1
+        # Find random melody/progression
+        notes = gst.scale.bounded_random_notes(
+                        gst.low, gst.high, gst.max_int, gst.length)
+
+        # store question info
+        st.CURRENT_Q_INFO = {'notes': notes}
+    else:
+        notes = st.CURRENT_Q_INFO['notes']
+
+    # Play melody/progression
+    if gst.single_notes:
+        easy_play(notes, bpm=gst.bpm)
+    else:
+        easy_play([gst.scale.root2chord(n, gst.chord_type) for n in notes],
+                  bpm=gst.bpm)
+
+    # Request user's answer
+    ans = listen(notes, (gst.low, gst.high), mingus_range=True)
+
+    eval_rn(ans, notes, gst)
+    # if ans in menu_commands:
+    #     menu_commands[ans].action()
+    # else:
+    #     eval_progression(ans, notes, gst)
+
+    # # Request user's answer
+    # ans = input("Enter your answer using root note names "
+    #             "or numbers 1-7 seperated by spaces: ").strip()
+    # if ans in menu_commands:
+    #     menu_commands[ans].action()
+    # else:
+    #     eval_progression(ans, prog, prog_strums)
+
 
 ###############################################################################
 ### game moodes ###############################################################
@@ -700,4 +771,9 @@ game_modes = {
                             intro, 
                             new_question_interval
                            ),
+    # 'random_notes': gs.GameMode('random_notes',
+    #                         intro_rn,
+    #                         new_question_rn,
+    #                         mode_specific_settings=st.rn_settings
+    #                         ),
     }

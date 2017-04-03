@@ -1,17 +1,41 @@
 # For python 3 compatibility
 from __future__ import division, absolute_import, print_function
-try: input = raw_input
-except: pass
+try:
+    input = raw_input
+except:
+    pass
 
 import settings as st
 
 
 # External Dependencies
-import time, random
+import random
 from mingus.midi import fluidsynth  # requires FluidSynth is installed
 from mingus.core import progressions, intervals, chords as ch
 import mingus.core.notes as notes
 from mingus.containers import NoteContainer, Note, Bar
+
+
+def random_progression(number_strums, numerals, strums_per_chord=[1]):
+
+    prog_strums = []
+    prog = []
+    numeral = ""
+    while len(prog_strums) < number_strums:
+        prev_numeral = numeral
+        numeral = random.choice(numerals)
+        if prev_numeral == numeral:  # check not same as previous chord
+            continue
+
+        strums = random.choice(strums_per_chord)
+
+        # not very elegant/musical (i.e. a "jazzy" solution)
+        if len(prog) + strums > number_strums:
+            strums = number_strums - len(prog)
+
+        prog_strums += [numeral] * strums
+        prog += [numeral]
+    return prog, prog_strums
 
 
 def random_chord():
@@ -35,80 +59,118 @@ def random_chord():
     return numeral, chord, Ioctave
 
 
+# def get_numerals(key, sevenths=False):
+#     if sevenths:
+#         numerals = [I, II, III, IV, V, VI, VII] = \
+#             ["I7", "II7", "III7", "IV7", "V7", "VI7", "VII7"]
+#         tones = [1, 3, 5, 7]
+#     else:
+#         numerals = [I, II, III, IV, V, VI, VII] = \
+#             ["I", "II", "III", "IV", "V", "VI", "VII"]
+#         tones = [1, 3, 5]
+#     return numerals, tones
+
+
 class Diatonic(object):
-    def __init__(self, key, Ioctave=None):
-        self.key = key
+    def __init__(self, key, Ioctave=None, minor=False):
+        self.minor = minor
         if not Ioctave:
             Ioctave = Note(key).octave
         self.Ioctave = Ioctave
 
-        if key[0] == key[0].lower():  # natural minor
+        if minor or key[0] == key[0].lower():  # natural minor
             self.rel_semitones = [0, 2, 3, 5, 7, 8, 10]
             self.keyname = key[0].upper + key[1:] + " Major"
         elif key[0] == key[0].upper():  # major
             self.rel_semitones = [0, 2, 4, 5, 7, 9, 11]
             self.keyname = key + " Minor"
-        self.tonic = Note(name=key.upper(), octave=Ioctave)
+        self.tonic = Note(name=key[0].upper() + key[1:], octave=Ioctave)
 
         self.abs_semitones = [int(self.tonic) + x for x in self.rel_semitones]
         self.notes = [Note().from_int(x) for x in self.abs_semitones]
         self.numdict = dict([(k + 1, n) for k, n in enumerate(self.notes)])
+        self.base_semitones = [x % 12 for x in self.abs_semitones]
 
-    def relsemi2note(self, rel_semi):
-        return Note().from_int(int(self.tonic) + rel_semi)
+    def semitone_distance2note(self, dist):
+        """Returns the note that is the input semitone distance from the tonic.
+        """
+        return Note().from_int(int(self.tonic) + dist)
 
-    def num2note(self, number, ascending=True):
-        assert number > 0
-        self.rel_semitones[(number - 1) % 8]
+    def degree2note(self, degree):
+        """Converts diatonic degree to `Note` object."""
+        assert degree > 0
         rel_semi = \
-            self.rel_semitones[(number - 1) % 8] + 12*((number - 1)//8)
-        return self.relsemi2note(rel_semi)
+            self.rel_semitones[(degree - 1) % 8] + 12 * ((degree - 1) // 8)
+        return self.semitone_distance2note(rel_semi)
 
-    def relsemi2note(self, rel_semi):
-        return Note().from_int(int(self.tonic) + rel_semi)
-
-    def note2num(self, note):
+    def note2degree(self, note):
+        """Converts a `Note` object to a diatonic degree."""
         base_semitones = [x % 12 for x in self.abs_semitones]
         note_base_semi = int(note) % 12
         try:
             return base_semitones.index(note_base_semi) + 1
         except:
             raise ValueError("{} is not a note in {}.".format(note.name, 
-                                self.keyname))
+                             self.keyname))
 
-    def nums2semidist(self, num1, num2):
+    def degrees2semidist(self, num1, num2):
+        """Find the distance in semitones between two diatonic degrees."""
         assert 1 <= num1 <= 7
         assert 1 <= num2 <= 7
-        return abs(int(self.num2note(num2)) - int(self.num2note(num1)))
-
+        return abs(int(self.degree2note(num2)) - int(self.degree2note(num1)))
 
     def interval(self, number, root=None, ascending=True):
         assert number > 0
-        if not root:
+        if root is None:
             root = self.notes[0]
 
-        root_num = self.note2num(root)
+        root_num = self.note2degree(root)
         if ascending:
-            second_note_num = (self.note2num(root) + (number - 1)) % 7
+            second_note_num = (self.note2degree(root) + (number - 1)) % 7
             if second_note_num == 0:
                 second_note_num = 7
-            semi_dist = self.nums2semidist(root_num, second_note_num)
+            semi_dist = self.degrees2semidist(root_num, second_note_num)
             if second_note_num < root_num:
                 semi_dist = 12 - semi_dist
-            second_note_int  = int(root) + semi_dist + 12*((number-1)//7)
+            second_note_int = int(root) + semi_dist + 12*((number-1)//7)
         else:
-            second_note_num = (self.note2num(root) - (number - 1)) % 7
+            second_note_num = (self.note2degree(root) - (number - 1)) % 7
             if second_note_num == 0:
                 second_note_num = 7
-            semi_dist = self.nums2semidist(root_num, second_note_num)
+            semi_dist = self.degrees2semidist(root_num, second_note_num)
             if second_note_num > root_num:
                 semi_dist = 12 - semi_dist
-            second_note_int  = int(root) - semi_dist - 12*((number-1)//7)
+            second_note_int = int(root) - semi_dist - 12*((number-1)//7)
 
         return NoteContainer(sorted([root, Note().from_int(second_note_int)]))
 
     def random_note(self):
         return random.choice(self.notes)
+
+    def bounded_random_notes(self, low, high, max_int, n):
+        note_int_range = [x for x in range(int(Note(low)), int(Note(high)) + 1)
+                            if (x % 12) in self.base_semitones]
+        notes = []
+        notes.append(Note().from_int(random.choice(note_int_range)))
+        for k in range(n):
+            potential_notes = [x for x in note_int_range
+                               if abs(x - int(notes[-1])) <= max_int]
+            notes.append(Note().from_int(random.choice(potential_notes)))
+        return notes
+
+    def root2chord(root_pitch, type='triad'):
+        """Given a `Note` object, returns a `NoteContainer`.  `type` determines
+        the chord type and voicing."""
+        if type == 'triad':
+            tones = [1, 3, 5]
+        elif type == 'sevenths':
+            tones = [1, 3, 5, 7]
+        elif type == 'triadbar':
+            tones == [1, 5, 8, 10, 12, 15]
+        else:
+            tones = type
+        degrees = [self.note2degree(root_pitch) + (d-1) for d in tones]
+        return NoteContainer(map(self.degree2note, degrees))
 
     
 def isvalidnote(answer):
@@ -123,12 +185,12 @@ def isvalidnote(answer):
     return False
 
 
-def random_key(output_on=True):
+def random_key(minor=False, output_on=True):
     """Returns a random major or minor key.
     Minor in lower case, major in upper case."""
     keys = ['A', 'Bb', 'B', 'C', 'C#', 'D', 'Eb', 'E', 'F', 'F#', 'G', 'Ab']
     key = random.choice(keys)
-    if random.choice([0, 1]):  # minor or major
+    if minor and random.choice([0, 1]):  # minor or major
         key = key.lower()
 
     # Inform user of new key
@@ -160,6 +222,7 @@ def easy_bar(notes, durations=None):
             bar.place_notes(x, d)
     return bar
 
+
 def easy_play(notes, durations=None, bpm=None):
     """`notes` should be a list of notes and/or note_containers.
     durations will all default to 4 (quarter notes).
@@ -168,8 +231,10 @@ def easy_play(notes, durations=None, bpm=None):
         bpm = st.BPM
     fluidsynth.play_Bar(easy_bar(notes, durations), bpm=bpm)
 
+
 def play_wait(duration=4):
     easy_play([None], [duration])
+
 
 def play_progression(prog, key, octaves=None, Ioctave=4, Iup = "I", bpm=None):
     """ Converts a progression to chords and plays them using fluidsynth.
@@ -242,23 +307,3 @@ def chordname(chord, numeral=None):
     return s
 
 
-def random_progression(number_strums, numerals, strums_per_chord=[1]):
-
-    prog_strums = []
-    prog = []
-    numeral = ""
-    while len(prog_strums) < number_strums:
-        prev_numeral = numeral
-        numeral = random.choice(numerals)
-        if prev_numeral == numeral:  # check not same as previous chord
-            continue
-
-        strums = random.choice(strums_per_chord)
-
-        # not very elegant/musical (i.e. a "jazzy" solution)
-        if len(prog) + strums > number_strums:
-            strums = number_strums - len(prog)
-
-        prog_strums += [numeral] * strums
-        prog += [numeral]
-    return prog, prog_strums
