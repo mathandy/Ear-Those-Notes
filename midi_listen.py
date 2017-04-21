@@ -125,38 +125,12 @@ class MidiListener:
             return self.history[ix].note in notes_released_since_ix
 
         note_count = 0
-        cursor = i0
-        released = []
-        unreleased = []
         while time.time() < stop_time and note_count < num_notes:
 
             if len(self.history) > i0 + 1 + note_count:  # if new notes heard
-                new_presses = [ix for ix in range(cursor, len(self.history))
-                               if self.history[ix].velocity > 0]
-                new_releases = [ix for ix in range(cursor, len(self.history))
-                                if self.history[ix].velocity == 0]
-                cursor = len(self.history)
-
                 if wait_for_key_release:
-                    # check of older presses were released
-                    for ix in new_releases:
-                        for jx_idx, jx in enumerate(unreleased):
-                            if self.history[ix].note == self.history[jx].note:
-                                released.append(unreleased.pop(jx_idx))
-                                break
-
-                    # divvy up new_presses into released and unreleased
-                    if new_presses:
-                        tmp = [(is_released(ix), ix) for ix in new_presses]
-                        released += [ix for rel, ix in tmp if rel]
-                        unreleased += [ix for rel, ix in tmp if not rel]
-                        if self.debug_mode:
-                            # print("note_count:", note_count)
-                            print("released:", released)
-                            print("unreleased:", unreleased)
-                            print("new_presses", new_presses)
-
-                    note_count = len(released)
+                    note_count = sum(1 for ix, x in self.history[i0:]
+                                         if x.velocity > 0 and is_released(ix))
                 else:
                     note_count = sum(1 for x in self.history[i0:]
                                      if x.velocity > 0)
