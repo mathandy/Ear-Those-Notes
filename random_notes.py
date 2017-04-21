@@ -31,11 +31,12 @@ import os
 import dill as pickle
 
 # Internal Dependencies
+import settings as st
 from getch import getch
 from musictools import random_key, Diatonic
 from game_structure import SettingsContainer
-from game_modes import new_question_rn
-import settings as st
+from new_question import new_question_rn
+
 
 # External Dependencies
 from mingus.midi import fluidsynth  # requires FluidSynth is installed
@@ -102,8 +103,10 @@ def create_new_game():
                             "2: sevenths\n",
                             'note', chord_types, chord_type_parser)
 
-    length = user_input("Specify the number of notes/chords to be played at a "
-                        "time (default 1): ", 1, lambda x: x > 0, int)
+    notes_per_phrase = user_input("Specify the number of notes/chords to be "
+                                  "played before you're asked to repeat what "
+                                  "you heard (default 1): ",
+                                  1, lambda x: x > 0, int)
 
     bpm = user_input("Specify the BPM (default 40).",
                      40, lambda x: x > 1, float)
@@ -152,8 +155,13 @@ def create_new_game():
     else:
         minor = False
 
-    settings = {'chord_type': chord_type, 'length': length, 'bpm': bpm,
-                'low': low, 'high': high, 'key': key, 'max_int': max_int}
+    settings = {'chord_type': chord_type,
+                'notes_per_phrase': notes_per_phrase,
+                'bpm': bpm,
+                'low': low,
+                'high': high,
+                'key': key,
+                'max_int': max_int}
 
     settings.update({
         'scale': Diatonic(key, minor=minor),

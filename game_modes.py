@@ -7,9 +7,10 @@ from getch import getch
 import game_structure as gs
 from musictools import (play_progression, random_progression, 
     random_key, isvalidnote, resolve_with_chords, chordname, 
-    random_chord, easy_play, play_wait)
+    random_chord, easy_play, play_wait, parse2note)
 import settings as st
 from listen import listen
+from midi_listen import HISTORY
 
 # External Dependencies
 import time, random, sys
@@ -676,75 +677,8 @@ def new_question_chord_tone():
             st.NEWQUESTION = False
     return
 
-###############################################################################
-# random-notes ################################################################
-###############################################################################
 
 
-def intro_rn():
-    print("And away we go!")
-
-
-@new_question
-def eval_rn(ans, notes, gst):
-    answers_correct = [(int(nu) - int(nc)) % 12 == 0
-                       for nu, nc in zip(ans, notes)]
-
-
-
-    print("Correct answer:", " ".join(notes))
-    print("Your answer:   ", " ".join(ans))
-
-    if all(answers_correct):
-        st.SCORE += 1
-        print("Good Job!")
-        print()
-    else:
-        print("It's ok, you'll get 'em next time.")
-        print()
-    # time.sleep(st.DELAY)
-    play_wait()
-
-
-def new_question_rn(game_settings):
-    gst = game_settings
-    if st.NEWQUESTION:
-        if st.COUNT:
-            print("score: {} / {} = {:.2%}".format(st.SCORE, st.COUNT,
-                                                    st.SCORE/st.COUNT))
-        st.COUNT += 1
-        # Find random melody/progression
-        notes = gst.scale.bounded_random_notes(
-                        gst.low, gst.high, gst.max_int, gst.length)
-
-        # store question info
-        st.CURRENT_Q_INFO = {'notes': notes}
-    else:
-        notes = st.CURRENT_Q_INFO['notes']
-
-    # Play melody/progression
-    if gst.single_notes:
-        easy_play(notes, bpm=gst.bpm)
-    else:
-        easy_play([gst.scale.root2chord(n, gst.chord_type) for n in notes],
-                  bpm=gst.bpm)
-
-    # Request user's answer
-    ans = listen(notes, (gst.low, gst.high), mingus_range=True)
-
-    eval_rn(ans, notes, gst)
-    # if ans in menu_commands:
-    #     menu_commands[ans].action()
-    # else:
-    #     eval_progression(ans, notes, gst)
-
-    # # Request user's answer
-    # ans = input("Enter your answer using root note names "
-    #             "or numbers 1-7 seperated by spaces: ").strip()
-    # if ans in menu_commands:
-    #     menu_commands[ans].action()
-    # else:
-    #     eval_progression(ans, prog, prog_strums)
 
 
 ###############################################################################

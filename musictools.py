@@ -16,6 +16,21 @@ import mingus.core.notes as notes
 from mingus.containers import NoteContainer, Note, Bar
 
 
+def parse2note(x):
+    if isinstance(x, int):
+        return Note().from_int(x)  # if integer
+    elif isinstance(x, str):
+        try:
+            return Note().from_int(str(x))  # if integer string
+        except:
+            return Note(x)  # if string note name
+    elif isinstance(x, Note):
+        return x  # if already Note
+    else:
+        raise Exception("Could not parse input {} of type {} to string."
+                        "".format(x, type(x)))
+
+
 def random_progression(number_strums, numerals, strums_per_chord=[1]):
 
     prog_strums = []
@@ -147,15 +162,20 @@ class Diatonic(object):
     def random_note(self):
         return random.choice(self.notes)
 
-    def bounded_random_notes(self, low, high, max_int, n):
-        note_int_range = [x for x in range(int(Note(low)), int(Note(high)) + 1)
+    def bounded_random_notes(self, low, high, max_int, n, previous_note=None):
+        note_int_range = [x for x in range(int(parse2note(low)), int(parse2note(high)) + 1)
                             if (x % 12) in self.base_semitones]
+
+
+        if previous_note is None:
+            previous_note = Note().from_int(random.choice(note_int_range))
+
         notes = []
-        notes.append(Note().from_int(random.choice(note_int_range)))
         for k in range(n):
             potential_notes = [x for x in note_int_range
-                               if abs(x - int(notes[-1])) <= max_int]
+                               if abs(x - int(previous_note)) <= max_int]
             notes.append(Note().from_int(random.choice(potential_notes)))
+            previous_note = notes[-1]
         return notes
 
     def root2chord(root_pitch, type='triad'):
@@ -227,13 +247,23 @@ def easy_play(notes, durations=None, bpm=None):
     """`notes` should be a list of notes and/or note_containers.
     durations will all default to 4 (quarter notes).
     bpm will default current BPM setting, `st.BPM`."""
-    if not bpm:
-        bpm = st.BPM
+    # if bpm is None:
+    #     bpm = st.BPM
+    assert bpm is not None
     fluidsynth.play_Bar(easy_bar(notes, durations), bpm=bpm)
 
 
-def play_wait(duration=4):
-    easy_play([None], [duration])
+def play_wait(duration=None, notes=None, bpm=None):
+    if notes and bpm is not None:
+        easy_play([None]*len(notes), bpm=bpm)
+    elif notes and bpm is None:
+        raise NotImplementedError
+    if bpm is None:
+        assert duration is not None
+        easy_play([None], durations=[duration])
+    elif duration is None:
+        assert bpm is not None
+        easy_play([None], bpm=bpm)
 
 
 def play_progression(prog, key, octaves=None, Ioctave=4, Iup = "I", bpm=None):
