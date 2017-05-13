@@ -29,6 +29,7 @@ except NameError:
 # Standard Library Dependencies
 import os
 import dill as pickle
+from copy import copy
 
 # Internal Dependencies
 import settings as st
@@ -36,7 +37,8 @@ from getch import getch
 from musictools import random_key, Diatonic
 from game_structure import SettingsContainer
 from new_question import new_question_rn
-
+from midi_listen import MidiListener
+from mic_listen import MicListener
 
 # External Dependencies
 from mingus.midi import fluidsynth  # requires FluidSynth is installed
@@ -56,17 +58,47 @@ if not os.path.exists(_saved_game_dir):
     os.makedirs(_saved_game_dir)
 
 
+def load_listener(x):
+    if x is None:
+        return x
+    elif x == "microphone":
+        return MicListener()
+    elif x == "midi":
+        return MidiListener()
+    else:
+        raise Exception("Loading error: listener not properly specified in "
+                        "save.")
+
+
 def load_game(saved_game):
     with open(saved_game) as data_file:
-        return pickle.load(data_file)
+        settings = pickle.load(data_file)
+    settings.update({'listener': load_listener(settings['listener'])})
+    return settings
+
+
+def saveable_listener(x):
+    if x is None:
+        return x
+    elif isinstance(x, MicListener):
+        return "microphone"
+    elif isinstance(x, MidiListener):
+        return "midi"
+    else:
+        return False
 
 
 def save_game(settings):
     """Saves (and returns) settings dictionary."""
     num = len(os.listdir(_saved_game_dir)) + 1
     new_save_file = os.path.join(_saved_game_dir, 'save{}.p'.format(num))
+
+    saveable_settings = copy(settings)
+    saveable_settings.update(
+        {'listener': saveable_listener(settings['listener'])}
+    )
     with open(new_save_file, 'w') as outfile:
-        pickle.dump(settings, outfile)
+        pickle.dump(saveable_settings, outfile)
     return settings
 
 
@@ -93,6 +125,35 @@ def user_input(mes='', default=None, acceptable=None, parser=str):
 def create_new_game():
     print("\nOK! Let's create a new game.")
     print("Press enter to select the default for any question.")
+
+    def input_method_parser(x):
+        if int(x) == 0:
+            return None
+        elif int(x) == 1:
+            return MicListener()
+        elif int(x) == 2:
+            return MidiListener()
+            input_method = "midi"
+        else:
+            return "try again"
+
+    def acceptable_input_methods(x):
+        if x is None:
+            return True
+        elif isinstance(x, MicListener):
+            return True
+        elif isinstance(x, MidiListener):
+            return True
+        else:
+            return False
+
+
+    listener = user_input("Input method?\n"
+                          "0: No evaluation (default)\n"
+                          "1: Microphone\n"
+                          "2: Midi\n",
+                            'note', acceptable_input_methods,
+                                    input_method_parser)
 
     chord_types = ['note', 'triad', 'seventh', 'triadbar']
     def chord_type_parser(x):
@@ -161,7 +222,8 @@ def create_new_game():
                 'low': low,
                 'high': high,
                 'key': key,
-                'max_int': max_int}
+                'max_int': max_int,
+                'listener': listener}
 
     settings.update({
         'scale': Diatonic(key, minor=minor),

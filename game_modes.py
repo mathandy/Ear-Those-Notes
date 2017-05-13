@@ -9,8 +9,6 @@ from musictools import (play_progression, random_progression,
     random_key, isvalidnote, resolve_with_chords, chordname, 
     random_chord, easy_play, play_wait, parse2note)
 import settings as st
-from listen import listen
-from midi_listen import HISTORY
 
 # External Dependencies
 import time, random, sys

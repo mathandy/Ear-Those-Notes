@@ -7,7 +7,6 @@ except:
 
 import settings as st
 
-
 # External Dependencies
 import random
 from mingus.midi import fluidsynth  # requires FluidSynth is installed
@@ -163,7 +162,8 @@ class Diatonic(object):
         return random.choice(self.notes)
 
     def bounded_random_notes(self, low, high, max_int, n, previous_note=None):
-        note_int_range = [x for x in range(int(parse2note(low)), int(parse2note(high)) + 1)
+        note_int_range = [x for x in range(int(parse2note(low)),
+                                           int(parse2note(high)) + 1)
                             if (x % 12) in self.base_semitones]
 
 
@@ -254,16 +254,17 @@ def easy_play(notes, durations=None, bpm=None):
 
 
 def play_wait(duration=None, notes=None, bpm=None):
-    if notes and bpm is not None:
+
+    if notes:
         easy_play([None]*len(notes), bpm=bpm)
-    elif notes and bpm is None:
-        raise NotImplementedError
-    if bpm is None:
-        assert duration is not None
-        easy_play([None], durations=[duration])
-    elif duration is None:
-        assert bpm is not None
-        easy_play([None], bpm=bpm)
+
+    elif duration:
+        if bpm:
+            easy_play([None], bpm=bpm)
+        else:
+            easy_play([None], durations=[duration])
+    else:
+        assert (notes and bpm) or duration
 
 
 def play_progression(prog, key, octaves=None, Ioctave=4, Iup = "I", bpm=None):
@@ -335,5 +336,3 @@ def chordname(chord, numeral=None):
     s += "  ::  ".join(ch.determine([x.name for x in chord], True))
     s += " -- " + " ".join([x.name for x in chord])
     return s
-
-

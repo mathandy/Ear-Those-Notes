@@ -1,4 +1,5 @@
 *.pyc
 .*
+*.p
 !.gitignore
 !.gitattributes

@@ -7,9 +7,9 @@ except:
 
 from musictools import easy_play, play_wait, parse2note
 import settings as st
-from listen import listen
-from midi_listen import HISTORY
 from game_modes import repeat_question, new_question  # Decorators
+from midi_listen import MidiListener
+from mic_listen import MicListener
 import time
 
 
@@ -75,30 +75,31 @@ def new_question_rn(game_settings):
         notes = st.CURRENT_Q_INFO['notes']
 
     # Play melody/progression
-    start_time = time.time()
-    i0 = len(HISTORY)
+    # start_time = time.time()
+    # i0 = len(HISTORY)
     if gst.single_notes:
         easy_play(notes, bpm=gst.bpm)
     else:
         easy_play([gst.scale.root2chord(n, gst.chord_type) for n in notes],
                   bpm=gst.bpm)
 
-    def midi_listen(notes):
-        i0 = len(HISTORY)
-        quarter_notes_per_second = 4*gst.bpm/60
-        time.sleep(gst.notes_per_phrase*quarter_notes_per_second)
-        # play_wait(notes, bpm=gst.bpm)
-        return HISTORY[i0:]
+    # def midi_listen(notes):
+    #     i0 = len(HISTORY)
+    #     quarter_notes_per_second = 4*gst.bpm/60
+    #     time.sleep(gst.notes_per_phrase*quarter_notes_per_second)
+    #     # play_wait(notes, bpm=gst.bpm)
+    #     return HISTORY[i0:]
 
     # Request user's answer
-    _midi_input = True
-    if _midi_input:
-        user_response = midi_listen(5)
-        for x in user_response:
-            print(x)
+    if isinstance(gst.listener, MidiListener):
+        user_response = gst.listener.listen(3)
         user_response_notes = parse_midi_input(user_response)
+        eval_rn(user_response_notes, notes, gst)
+    elif isinstance(gst.listener, MicListener):
+        user_response_notes = gst.listener.listen(notes, (gst.low, gst.high),
+                                                  mingus_range=True)
+        eval_rn(user_response_notes, notes, gst)
     else:
-        user_response_notes = listen(notes, (gst.low, gst.high),
-                                     mingus_range=True)
+        play_wait(3, bpm=gst.bpm)
 
-    eval_rn(user_response_notes, notes, gst)
+
