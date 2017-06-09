@@ -57,7 +57,7 @@ $ brew install fluidsynth
 
 [On Windows:]
 
-You can either compile FluidSynth yourself or use the binary installer (.exe) that is available for its GUI, Qsynth.
+You can either compile FluidSynth yourself or use `the binary installer (.exe) <https://sourceforge.net/projects/qsynth/>`_  that is available for its GUI, Qsynth.
 
 For Help
 --------
