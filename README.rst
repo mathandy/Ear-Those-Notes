@@ -20,46 +20,36 @@ To Run
 
 $ python earthosenotes.py
 
-
 Prerequisites
 -------------
 -  **python 2.x**
 -  **mingus**
 -  **sequencer**
 -  **fluidsynth**
+-  **pyaudio**
+-  **python-rtmidi**
 
 Setup
 -----
-
-**1. Get Python 2**
-
-Note: If you have a **Mac** or are running **Linux**, you already have Python 2.x.  If you're on **Windows**, go download Python 2 and install it.
-
-**2. Install mingus and sequencer python modules**
-
-This is easy using pip (which typically comes with Python).  Just open up a terminal/command-prompt and enter the following two commands (without the $).
-
-$ pip install mingus
-
-$ pip install sequencer
-
-**3. Install fluidsynth**
-
-This is easy through a linux/mac package manager.
 
 [On Linux:]
 
 $ sudo apt-get install fluidsynth libasound2-dev libjack-dev portaudio19-dev  
 
-$ pip install python-rtmidi pyaudio
+$ pip install mingus sequencer python-rtmidi pyaudio
 
-[On OS X:] (assuming you have Homebrew installed)
+
+[On OS X:]
 
 $ brew install fluidsynth
+
+$ pip install mingus sequencer python-rtmidi pyaudio
 
 [On Windows:]
 
 You can either compile FluidSynth yourself or use `the binary installer (.exe) <https://sourceforge.net/projects/qsynth/>`_  that is available for its GUI, Qsynth.
+
+$ pip install mingus sequencer python-rtmidi pyaudio
 
 For Help
 --------
@@ -67,5 +57,4 @@ Contact me, AndyAPort@gmail.com
 
 Licence
 -------
-
 This code is available for reuse under the Apache License.
