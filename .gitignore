@@ -1,5 +1,5 @@
 *.pyc
 .*
-*.p
+saved_games
 !.gitignore
 !.gitattributes
