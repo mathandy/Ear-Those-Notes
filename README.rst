@@ -49,7 +49,8 @@ This is easy through a linux/mac package manager.
 
 [On Linux:]
 
-$ sudo apt-get install fluidsynth
+$ sudo apt-get install fluidsynth libasound2-dev libjack-dev portaudio19-dev
+$ pip install python-rtmidi pyaudio
 
 [On OS X:] (assuming you have Homebrew installed)
 

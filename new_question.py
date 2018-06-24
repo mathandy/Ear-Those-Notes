@@ -92,9 +92,11 @@ def new_question_rn(game_settings):
 
     # Request user's answer
     if isinstance(gst.listener, MidiListener):
-        user_response = gst.listener.listen(3)
+        user_response = \
+            gst.listener.listen(num_notes=gst.notes_per_phrase)
         user_response_notes = parse_midi_input(user_response)
         eval_rn(user_response_notes, notes, gst)
+        play_wait(3, bpm=gst.bpm)
     elif isinstance(gst.listener, MicListener):
         user_response_notes = gst.listener.listen(notes, (gst.low, gst.high),
                                                   mingus_range=True)

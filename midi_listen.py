@@ -7,6 +7,7 @@ import logging
 import sys
 import time
 from rtmidi.midiutil import open_midiinput
+from musictools import easy_play
 
 
 class MidiKeyPress(object):
@@ -50,6 +51,7 @@ class MidiListener:
         self._port = port
         self._wallclock = time.time()
         self.debug_mode = False
+
         # self.log = logging.getLogger('midiin_callback')
         # logging.basicConfig(level=logging.DEBUG)
 
@@ -126,7 +128,6 @@ class MidiListener:
 
         note_count = 0
         while time.time() < stop_time and note_count < num_notes:
-
             if len(self.history) > i0 + 1 + note_count:  # if new notes heard
                 if wait_for_key_release:
                     note_count = sum(1 for ix, x in self.history[i0:]
